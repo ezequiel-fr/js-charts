@@ -1,21 +1,40 @@
-import { SVG, Svg } from '@svgdotjs/svg.js';
+import { Rect, SVG, Svg } from '@svgdotjs/svg.js';
 
-type RestOrArray<T> = T[] | [T[]];
+export type RestOrArray<T> = T[] | [T[]];
+export type Dimensions = { width: number, height: number };
 
 class Charts<Data = any> {
-    protected data: Data[];
-    protected svg: Svg;
+    private background: Rect;
 
-    constructor() {
+    protected canvas: Svg;
+    protected data: Data[];
+    protected height: number;
+    protected width: number;
+
+    constructor(dimensions: Dimensions = { width: 200, height: 200 }) {
         this.data = [];
 
+        this.width = dimensions.width;
+        this.height = dimensions.height;
+
         // SVGElement
-        this.svg = SVG();
-        this.svg.size(800, 450).fill("blue");
+        this.canvas = SVG();
+        this.canvas.size(this.width, this.height);
+
+        // set grey background (default)
+        this.background = new Rect();
+        this.canvas.add(this.background);
+        this.setBackground();
+    }
+
+    protected setBackground() {
+        this.background.fill("#eee");
+        this.background.size(this.width, this.height);
+        this.background.stroke({ color: "#555", width: 2 });
     }
 
     toString(): string {
-        return this.svg.svg()
+        return this.canvas.svg()
     }
 
     setData(...data: RestOrArray<Data>) {

@@ -1,9 +1,17 @@
 import { Svg } from '@svgdotjs/svg.js';
-declare type RestOrArray<T> = T[] | [T[]];
+export declare type RestOrArray<T> = T[] | [T[]];
+export declare type Dimensions = {
+    width: number;
+    height: number;
+};
 declare class Charts<Data = any> {
+    private background;
+    protected canvas: Svg;
     protected data: Data[];
-    protected svg: Svg;
-    constructor();
+    protected height: number;
+    protected width: number;
+    constructor(dimensions?: Dimensions);
+    protected setBackground(): void;
     toString(): string;
     setData(...data: RestOrArray<Data>): this;
 }

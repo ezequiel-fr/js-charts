@@ -1,16 +1,17 @@
-import Charts from './utils/charts';
+import Charts, { Dimensions } from './utils/charts';
 declare type Coords = {
     x: number;
     y: number;
 };
 declare class ScatterPlots extends Charts<Coords> {
-    constructor();
+    dotSize: number;
+    constructor(dimensions?: Dimensions);
     private get minX();
     private get minY();
     private get maxX();
     private get maxY();
     private get zoom();
-    private calculateZoom;
+    private calcNewCoords;
     process(): this;
 }
 export default ScatterPlots;

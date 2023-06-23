@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "description": "Create your own charts with JavaScript.",
   "main": "dist/index.js",
-  "scripts": {},
+  "scripts": {
+    "lint": "eslint ./dist --fix"
+  },
   "keywords": [
     "charts"
   ],
