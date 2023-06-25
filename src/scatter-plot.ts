@@ -12,6 +12,11 @@ class ScatterPlots extends Charts<Coords> {
         super(dimensions);
 
         this.dotSize = 4;
+        this.setGrid({
+            width: this.width / 12,
+            height: this.height / 12,
+            // color: "#eee",
+        });
     }
 
     private get minX() { return Math.min(...this.data.map(p => p.x)) }
@@ -40,7 +45,7 @@ class ScatterPlots extends Charts<Coords> {
         const x = this.data.sort((a, b) => a.x - b.x);
         const y = this.data.sort((a, b) => a.y - b.y);
 
-        const container = new G();
+        const container = new G().addClass("scatter-plot");
         this.canvas.add(container);
 
         const { zoom } = this;
