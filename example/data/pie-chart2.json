@@ -1,0 +1,12 @@
+[
+    {"label": "Sales",      "value": 35},
+    {"label": "Ads",        "value": 22.5},
+    {"label": "Promotions", "value": 20  },
+    {"label": "Contracts",  "value": 15  },
+    {"value": 12.5},
+    {"label": "Sales",      "value": 36  },
+    {"label": "Ads",        "value": 225},
+    {"label": "Promotions", "value": 21  },
+    {"label": "Contracts",  "value": 13  },
+    {"value": 0.5}
+]

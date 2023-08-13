@@ -52,6 +52,10 @@ class Charts<Data = any> {
         this.background.stroke({ color: "#555", width: 2 });
     }
 
+    process() {
+        return this;
+    }
+
     toString(): string {
         return this.canvas.svg()
     }

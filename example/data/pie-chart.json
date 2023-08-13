@@ -1,0 +1,7 @@
+[
+    {"label": "Sales",      "value": 35,  "color": "#0ff"},
+    {"label": "Ads",        "value": 22.5},
+    {"label": "Promotions", "value": 20  },
+    {"label": "Contracts",  "value": 15  },
+    {"value": 12.5}
+]

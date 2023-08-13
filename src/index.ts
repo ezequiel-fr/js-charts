@@ -1,15 +1,18 @@
 import { createSVGWindow } from 'svgdom';
 import { registerWindow } from '@svgdotjs/svg.js';
 
-import scatterPlot from './scatter-plot';
+import PieChart from './pie-chart';
+import ScatterPlot from './scatter-plot';
 
 const window = createSVGWindow();
 const document = window.document;
 
 registerWindow(window, document);
 
-export const ScatterPlots = scatterPlot;
-
-export default {
-    ScatterPlots,
+module.exports = {
+    PieChart,
+    ScatterPlot,
 };
+
+module.exports.PieChart = PieChart;
+module.exports.ScatterPlot = ScatterPlot;

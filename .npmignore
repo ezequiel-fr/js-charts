@@ -2,5 +2,8 @@
 src
 tests
 
+.eslintignore
+.eslintrc
+.gitignore
 .npmrc
 tsconfig.json

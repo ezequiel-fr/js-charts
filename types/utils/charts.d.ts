@@ -17,6 +17,7 @@ declare class Charts<Data = any> {
     constructor(dimensions?: Dimensions);
     protected setGrid(grid: Grid): void;
     protected setBackground(): void;
+    process(): this;
     toString(): string;
     setData(...data: RestOrArray<Data>): this;
 }
