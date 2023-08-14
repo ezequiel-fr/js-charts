@@ -113,17 +113,17 @@ declare module 'js-charts' {
     // Snippets functions
 
     /** Single bar chart snippet */
-    function createSingleBarChart(data: RestOrArray<BarsDataSet>): string;
+    export function createSingleBarChart(data: RestOrArray<BarsDataSet>): string;
     /** Stacked bar chart snippet */
-    function createStackedBarChart(data: RestOrArray<BarsDataSet>): string;
+    export function createStackedBarChart(data: RestOrArray<BarsDataSet>): string;
     /** Multiseries bar chart snippet */
-    function createMultiseriesBarChart(data: RestOrArray<BarsDataSet>): string;
+    export function createMultiseriesBarChart(data: RestOrArray<BarsDataSet>): string;
     /** Histogram snippet */
-    function createHistogram(data: RestOrArray<number>): string;
+    export function createHistogram(data: RestOrArray<number>): string;
     /** Pie chart snippet */
-    function createPieChart(data: RestOrArray<Slices>): string;
+    export function createPieChart(data: RestOrArray<Slices>): string;
     /** Scatter plots snippet */
-    function createScatterPlots(data: RestOrArray<Coords>): string;
+    export function createScatterPlots(data: RestOrArray<Coords>): string;
 
     // Default export
     const jsCharts: {

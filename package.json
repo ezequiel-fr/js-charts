@@ -1,6 +1,6 @@
 {
   "name": "js-charts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Create your own charts with JavaScript.",
   "main": "dist/index.js",
   "types": "./types.d.ts",
