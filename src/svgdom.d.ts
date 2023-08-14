@@ -1,3 +1,3 @@
 declare module 'svgdom' {
-  export function createSVGWindow(): any;
+    export function createSVGWindow(): any;
 }

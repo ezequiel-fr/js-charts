@@ -3,7 +3,7 @@ import { Circle, G, Text } from '@svgdotjs/svg.js';
 import Charts, { Dimensions } from './utils/charts';
 import { roundTo } from './utils/math';
 
-type Coords = { x: number, y: number };
+export type Coords = { x: number, y: number };
 
 class ScatterPlots extends Charts<Coords> {
     public dotSize: number;

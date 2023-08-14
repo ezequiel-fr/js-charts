@@ -4,11 +4,6 @@
     "module": "CommonJS",
     "outDir": "./dist",
     "rootDir": "./src",
-
-    // temp
-    "declaration": true,
-    "declarationDir": "./types",
-
     "removeComments": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

@@ -3,7 +3,7 @@ import { Text } from '@svgdotjs/svg.js';
 import Charts, { Dimensions } from './utils/charts';
 import { roundTo, sum } from './utils/math';
 
-type DataSet = number[];
+export type DataSet = number[];
 
 class BarChart extends Charts<DataSet> {
     constructor(dimensions: Dimensions = { width: 500, height: 400 }) {

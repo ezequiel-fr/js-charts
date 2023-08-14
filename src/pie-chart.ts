@@ -3,7 +3,7 @@ import { G, Text } from '@svgdotjs/svg.js';
 import Charts, { Dimensions } from './utils/charts';
 import { roundTo } from './utils/math';
 
-type Slices = {
+export type Slices = {
     color?: string;
     label?: string;
     value: number;
