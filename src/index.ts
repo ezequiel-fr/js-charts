@@ -1,7 +1,7 @@
 import { createSVGWindow } from 'svgdom';
 import { registerWindow } from '@svgdotjs/svg.js';
 
-import { Coords, SVGMultiseries } from './svg/series';
+import { Coords, SVGMultiseries, SVGMultiseriesParams } from './svg/series';
 import { RestOrArray } from './utils/charts';
 
 type ChartType = 'html' | 'svg';
@@ -16,9 +16,12 @@ if (typeof window === 'undefined') {
 
 export const multiseriesFromData = (data: RestOrArray<Coords>, type: ChartType = 'svg') => (
     type === 'svg'
-        ? new SVGMultiseries().setData(...data).process().toString()
+        ? new SVGMultiseries().setData('serie1', ...data).process().toString()
         : ''
 );
 
 // default export
 export { SVGMultiseries };
+
+// named exports
+export type { SVGMultiseriesParams };

@@ -1,6 +1,7 @@
 import { G, Rect, SVG, StrokeData, Svg } from '@svgdotjs/svg.js';
 
 import { AvailableThemes, getStroke, Themes, toValidHex } from './colors';
+import { roundTo } from './math';
 
 export type RestOrArray<T> = T[] | [T[]];
 export type Dimensions = { width: number, height: number };
@@ -17,26 +18,34 @@ type ChartColors = {
     theme?: AvailableThemes,
 } | {
     background: string;
-    color: string;
-    stroke: string | null;
+    colors: string[];
+    stroke?: string | null;
 };
 
 export type SVGChartParams = ChartColors & {
     border?: boolean;
     dimensions?: Dimensions;
+    title?: string;
+    // labels?: [string, string | undefined];
     showGrid?: boolean;
+    // showLabels?: boolean;
+    // showAxis?: boolean;
 }
 
 class SVGChart<Data = any> {
     // params
-    protected colors;
+    protected colors: {
+        background: string,
+        stroke?: string | null,
+    } & Record<`color${number}`, string>
     protected height: number;
     protected width: number;
     protected border: boolean;
+    protected title?: string;
     protected showGrid: boolean;
 
     // data
-    protected data: Data[] = [];
+    protected data: Map<string, Data[]> = new Map();
 
     // SVG elements
     protected canvas: Svg;
@@ -47,24 +56,40 @@ class SVGChart<Data = any> {
         // set default params and merge with user params
         const defaults = {
             dimensions: { width: 200, height: 200 },
-            theme: 'light',
             background: 'null',
-            color: 'null',
+            colors: [],
             stroke: null,
             border: false,
             showGrid: true,
             ...params
         };
 
-        // parse params
-        this.colors =  defaults.theme in Themes ? Themes[defaults.theme as AvailableThemes] : {
-            background: toValidHex(defaults.background, Themes.light.background) as string,
-            color: toValidHex(defaults.color, Themes.light.color), // @ts-ignore
-            stroke: defaults.stroke ? toValidHex(defaults.stroke, null) : null,
-        };
+        // parse color
+        let colors = {} as typeof this.colors;
+
+        // if theme is provided, use it
+        if ('theme' in defaults && defaults.theme) { // @ts-ignore
+            colors = Themes[defaults.theme in Themes ? defaults.theme : 'light'];
+        } else {
+            colors = 'background' in defaults && 'colors' in defaults ? Themes.none : Themes.light;
+        }
+
+        // if custom colors are provided, use them
+        if ('background' in defaults)
+            colors.background = toValidHex(defaults.background, colors.background);
+        if ('colors' in defaults)
+            for (let i = 0; i < defaults.colors.length; i++)
+                colors[`color${i + 1}`] = toValidHex(defaults.colors[i]);
+        if ('stroke' in defaults)
+            colors.stroke = defaults.stroke ? toValidHex(defaults.stroke) : null;
+
+        this.colors = { stroke: null, ...colors };
+
+        // parse other params
         this.height = defaults.dimensions.height;
         this.width = defaults.dimensions.width;
         this.border = defaults.border;
+        this.title = defaults.title;
         this.showGrid = defaults.showGrid;
 
         // init SVG canvas
@@ -76,6 +101,12 @@ class SVGChart<Data = any> {
         this.setBackground();
     }
 
+    public setCustomCanvas(c: Svg, bg: Rect, bgGroup: G) {
+        this.canvas = c;
+        this.background = bg;
+        this.backgroundGroup = bgGroup;
+    }
+
     protected setBackground() {
         // set background
         this.background.fill(this.colors.background);
@@ -83,7 +114,7 @@ class SVGChart<Data = any> {
 
         // set border
         if (this.border) this.background.stroke({
-            color: this.colors.stroke || this.colors.color,
+            color: this.colors.stroke || this.colors.color1,
             width: 2,
         });
     }
@@ -96,40 +127,31 @@ class SVGChart<Data = any> {
 
         // using x and y to offset the grid
         const container = new Rect().size(
-            (this.canvas.width() as number) - (grid.startX || 0) - (grid.endX || 0),
-            (this.canvas.height() as number) - (grid.startY || 0) - (grid.endY || 0),
+            (grid.endX || 0) - (grid.startX || 0) + 1,
+            (grid.endY || 0) - (grid.startY || 0) + 1,
         ).move(grid.startX || 0, grid.startY || 0);
 
         const pattern = this.canvas.defs().pattern(grid.width, grid.height, add => {
-            add.path(`M${grid.width} 0 L0 0 0 ${grid.height}`).fill('none').stroke({
-                color: strokeColor,
-                width: .5,
-                ...stroke
-            });
+            add.path(`M${roundTo(grid.width)} 0 L0 0 0 ${roundTo(grid.height)}`)
+               .fill('none')
+               .stroke({ color: strokeColor, width: .5, ...stroke });
         });
 
         // the pattern should start at bottom left corner
-        pattern.move(
-            grid.startX || 0,
-            grid.height - (grid.endY || 0),
-        );
+        pattern.move(grid.startX || 0, grid.endY || 0);
 
         // fill the container with the pattern and add it to the background group
         container.fill(pattern);
         this.backgroundGroup.add(container);
     }
 
-    setData(...data: RestOrArray<Data>) {
-        this.data = data.flat() as Data[];
+    setData(serie: string, ...data: RestOrArray<Data>) {
+        this.data.set(serie, data as Data[]);
         return this;
     }
 
     toString() {
-        return this.canvas.svg()
-            .replace(/\n|\r|\t/g, '')
-            .replace(/\s{2,}/g, '')
-            .replace(/>\s+/g, '>')
-            .replace(/\s+\/>/g, '/>');
+        return this.canvas.svg();
     }
 }
 
