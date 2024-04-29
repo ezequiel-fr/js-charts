@@ -1,4 +1,4 @@
-import { Circle, G, Polyline } from '@svgdotjs/svg.js';
+import { Circle, G, Polyline, Rect } from '@svgdotjs/svg.js';
 
 import SVGCharts, { RestOrArray, SVGChartParams } from '../utils/charts';
 import { AvailableColorKeys } from '../utils/colors';
@@ -9,6 +9,7 @@ export type Coords = { x: number, y: number };
 export type SVGMultiseriesParams = SVGChartParams & {
     axisSoft?: 'auto' | { min?: number, max?: number };
     styleMode?: "line" | "points" | "both" | "bars";
+    fillMode?: "none" | "solid" | "gradient" | "opacity" | "opacity-gradient";
 };
 
 interface Padding {
@@ -20,11 +21,13 @@ interface Padding {
 
 export class SVGMultiseries extends SVGCharts<Coords> {
     protected axisSoft: { min?: number, max?: number };
-    protected styleMode: "line" | "points" | "both" | "bars";
+    protected styleMode: Exclude<SVGMultiseriesParams['styleMode'], undefined>;
+    protected fillMode: Exclude<SVGMultiseriesParams['fillMode'], undefined>;
 
     constructor(params: SVGMultiseriesParams = {}, data: RestOrArray<Coords> = []) {
         super({
             dimensions: { width: 800, height: 450 },
+            fillMode: "none",
             ...params,
         });
 
@@ -34,16 +37,17 @@ export class SVGMultiseries extends SVGCharts<Coords> {
 
         // parse other params
         this.styleMode = params.styleMode || "both";
+        this.fillMode = params.fillMode || "none";
 
         // set data if provided
         data.length && this.setData('serie1', ...data);
     }
 
-    private createSerie(data: Coords[], color: string, container: G, pad: Padding, grid = false) {
+    private createSerie([name, data]: [string, Coords[]], color: string, container: G, pad: Padding, grid = false) {
         // sort data by x
         data = data.sort((a, b) => a.x - b.x);
 
-        const graph = new G().addClass("graph");
+        const graph = new G().addClass(`graph-${name}`);
         container.add(graph);
 
         // create scales based on axisSoft
@@ -58,10 +62,21 @@ export class SVGMultiseries extends SVGCharts<Coords> {
         const xScale = size.width / deviation(data.map(p => p.x));
         const yScale = size.height / (maxY - minY);
 
+        // remove overflowing content using a clip-path
+        const clip = this.canvas.clip().id(`clip-graph-${name}`);
+        clip.add(new Rect().size(size.width, size.height).move(pad.left, pad.top));
+        graph.clipWith(clip);
+
         // create new coords
         const coords = data.map(p => ({
             x: roundTo((p.x - data[0].x) * xScale, 2) + pad.left,
             y: roundTo((maxY - p.y) * yScale, 2) + pad.top,
+        })).map(p => ({
+            ...p,
+            d: p.x >= pad.left
+            && p.x <= size.width + pad.left
+            && p.y >= pad.top
+            && p.y <= size.height + pad.top,
         }));
 
         // create lines
@@ -77,7 +92,7 @@ export class SVGMultiseries extends SVGCharts<Coords> {
         if (this.styleMode === "points" || this.styleMode === "both") {
             const size = 6;
 
-            coords.forEach(p => graph.add(new Circle()
+            coords.forEach(p => p.d && graph.add(new Circle()
                 .size(size, size)
                 .move(p.x - size / 2, p.y - size / 2)
                 .fill(color)
@@ -100,6 +115,43 @@ export class SVGMultiseries extends SVGCharts<Coords> {
                     )
                     .fill({ color: color, opacity: .55 })
             });
+        // fill mode (disabled for bars)
+        } else if (this.fillMode === "solid" || this.fillMode === "opacity" ) {
+            container.add(graph.add(new Polyline()
+                .plot([
+                    `${coords[0].x},${size.height + pad.top}`,
+                    ...coords.map(p => `${p.x},${p.y}`),
+                    `${coords[coords.length - 1].x},${size.height + pad.top}`,
+                    `${coords[0].x},${size.height + pad.top}`
+                ].join(" "))
+                .fill(color)
+                .opacity(this.fillMode === "opacity" ? .3 : 1)
+            ));
+        } else if (this.fillMode === "gradient" || this.fillMode === "opacity-gradient") {
+            const og = this.fillMode === "opacity-gradient";
+
+            const gradient = this.canvas.defs().gradient('linear', add => {
+                if (og) {
+                    add.stop({ offset: 0, color, opacity: .6 });
+                    add.stop({ offset: 1, color, opacity: 0 });
+                } else {
+                    add.stop({ offset: 0, color: '#0d0', opacity: .3 });
+                    add.stop({ offset: .4, color: '#dd0', opacity: .3 });
+                    add.stop({ offset: 1, color: '#d00', opacity: .3 });
+                }
+
+                add.rotate(90);
+            });
+
+            container.add(graph.add(new Polyline()
+                .plot([
+                    `${coords[0].x},${size.height + pad.top}`,
+                    ...coords.map(p => `${p.x},${p.y}`),
+                    `${coords[coords.length - 1].x},${size.height + pad.top}`,
+                    `${coords[0].x},${size.height + pad.top}`
+                ].join(" "))
+                .fill(gradient)
+            ));
         }
 
         grid && this.setGrid({
@@ -125,9 +177,9 @@ export class SVGMultiseries extends SVGCharts<Coords> {
         const colors = Object.keys(this.colors).filter(c => c.startsWith('color')).length;
 
         // create series
-        for (const [_name, data] of this.data.entries()) {
+        for (const serie of this.data.entries()) {
             const color = this.colors[`color${(i+++(colors-1))%colors+1}` as AvailableColorKeys];
-            this.createSerie(data, color, container, pad, _name === 'serie1');
+            this.createSerie(serie, color, container, pad, serie[0] === 'serie1');
         }
 
         // set grid and axis
