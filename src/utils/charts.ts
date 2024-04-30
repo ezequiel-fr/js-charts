@@ -9,6 +9,8 @@ export type Dimensions = { width: number, height: number };
 export interface Grid extends Dimensions {
     startX?: number;
     startY?: number;
+    justifyX?: number;
+    justifyY?: number;
     endX?: number;
     endY?: number;
     stroke?: StrokeData;
@@ -138,7 +140,10 @@ class SVGChart<Data = any> {
         });
 
         // the pattern should start at bottom left corner
-        pattern.move(grid.startX || 0, grid.endY || 0);
+        pattern.move(
+            ((grid.startX || 0) + (grid.justifyX || 0)) % grid.width,
+            ((grid.endY || 0) + (grid.justifyY || 0)) % grid.height,
+        );
 
         // fill the container with the pattern and add it to the background group
         container.fill(pattern);
