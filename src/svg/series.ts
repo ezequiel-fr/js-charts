@@ -1,4 +1,4 @@
-import { Circle, G, Polyline, Rect } from '@svgdotjs/svg.js';
+import { Circle, G, Polyline, Rect, Text } from '@svgdotjs/svg.js';
 
 import SVGCharts, { RestOrArray, SVGChartParams } from '../utils/charts';
 import { AvailableColorKeys } from '../utils/colors';
@@ -33,7 +33,7 @@ export class SVGMultiseries extends SVGCharts<Coords> {
         });
 
         // set axis soft
-        const soft = params.axisSoft || 'fit';
+        const soft = params.axisSoft || 'auto';
 
         if (typeof soft === 'object') {
             this.axisSoft = soft;
@@ -70,7 +70,7 @@ export class SVGMultiseries extends SVGCharts<Coords> {
         // remove overflowing content using a clip-path
         const clip = this.canvas.clip().id(`clip-graph-${name}`);
         clip.add(new Rect().size(size.width, size.height).move(pad.left, pad.top));
-        graph.clipWith(clip);
+        // graph.clipWith(clip);
 
         // create new coords
         const coords = data.map(p => ({
@@ -100,10 +100,10 @@ export class SVGMultiseries extends SVGCharts<Coords> {
             coords.filter(p => (
                 p.x >= pad.left && p.x <= size.width + pad.left
                 && p.y >= pad.top && p.y <= size.height + pad.top
-            )).forEach(p => graph.add(new Circle()
+            )).forEach((p, i) => graph.add(new Circle()
                 .size(dotSize, dotSize)
                 .move(p.x - dotSize / 2, p.y - dotSize / 2)
-                .fill(color)
+                .fill(color),
             ));
         }
 
@@ -200,38 +200,27 @@ export class SVGMultiseries extends SVGCharts<Coords> {
         const yScale = size.height / (maxY - minY + softMin + softMax);
 
         // create series
-        for (const serie of this.data.entries()) {
-            const color = this.colors[`color${(i+++(colors-1))%colors+1}` as AvailableColorKeys];
-
-            this.createSerie(
-                serie,
-                { minX, maxY: maxY + softMin / 2 + softMax / 2 },
-                { xScale, yScale },
-                size,
-                color,
-                container,
-                pad,
-            );
-        }
+        for (const serie of this.data.entries()) this.createSerie(
+            serie,
+            { minX, maxY: maxY + softMin / 2 + softMax / 2 },
+            { xScale, yScale },
+            size,
+            this.colors[`color${(i+++(colors-1))%colors+1}` as AvailableColorKeys],
+            container,
+            pad,
+        );
 
         // set grid and axis
         const width = Math.max(roundTo(xScale * (this.styleMode === 'bars' ? 1.6 : 1)), 10);
         const height = Math.max(roundTo(yScale * (this.styleMode === 'bars' ? 1.6 : 1)), 10);
 
-        console.log(
-            size.height, minY, maxY, yScale,
-            // (maxY - p.y) * yScale
-            (size.height - maxY * yScale),
-        );
-
+        // calculate the coordinates of the lowest point
         this.setGrid({
             startX: pad.left,
             startY: pad.top,
             endX: size.width + pad.left,
             endY: size.height + pad.top,
-            // justifyY: roundTo(height / (softMax + softMin + 1)),
-            // justifyY: maxY - (roundTo((maxY - p.y) * yScale, 2) + pad.top),
-            justifyY: roundTo(pad.top - maxY * yScale),
+            justifyY: (maxY + softMin / 2 + softMax / 2 - minY) * yScale - size.height,
             width,
             height,
         });

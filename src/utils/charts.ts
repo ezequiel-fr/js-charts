@@ -141,8 +141,8 @@ class SVGChart<Data = any> {
 
         // the pattern should start at bottom left corner
         pattern.move(
-            ((grid.startX || 0) + (grid.justifyX || 0)) % grid.width,
-            ((grid.endY || 0) + (grid.justifyY || 0)) % grid.height,
+            roundTo(((grid.startX || 0) + (grid.justifyX || 0)) % grid.width),
+            roundTo(((grid.endY || 0) + (grid.justifyY || 0)) % grid.height),
         );
 
         // fill the container with the pattern and add it to the background group
