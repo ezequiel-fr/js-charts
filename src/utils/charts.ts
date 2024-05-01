@@ -1,6 +1,6 @@
 import { G, Rect, SVG, StrokeData, Svg } from '@svgdotjs/svg.js';
 
-import { AvailableThemes, getStroke, Themes, toValidHex } from './colors';
+import { AvailableColorKeys, AvailableThemes, getStroke, Themes, toValidHex } from './colors';
 import { roundTo } from './math';
 
 export type RestOrArray<T> = T[] | [T[]];
@@ -21,6 +21,7 @@ type ChartColors = {
 } | {
     background: string;
     colors: string[];
+    text?: string;
     stroke?: string | null;
 };
 
@@ -28,9 +29,9 @@ export type SVGChartParams = ChartColors & {
     border?: boolean;
     dimensions?: Dimensions;
     title?: string;
-    // labels?: [string, string | undefined];
+    labels?: [string, string | undefined];
     showGrid?: boolean;
-    // showLabels?: boolean;
+    showLabels?: boolean;
     // showAxis?: boolean;
 }
 
@@ -39,11 +40,13 @@ class SVGChart<Data = any> {
     protected colors: {
         background: string,
         stroke?: string | null,
+        text: string,
     } & Record<`color${number}`, string>
     protected height: number;
     protected width: number;
     protected border: boolean;
     protected title?: string;
+    protected labels: [string, string];
     protected showGrid: boolean;
 
     // data
@@ -59,10 +62,13 @@ class SVGChart<Data = any> {
         const defaults = {
             dimensions: { width: 200, height: 200 },
             background: 'null',
+            text: 'null',
             colors: [],
             stroke: null,
             border: false,
+            labels: ['x', 'y'],
             showGrid: true,
+            showLabels: true,
             ...params
         };
 
@@ -84,6 +90,8 @@ class SVGChart<Data = any> {
                 colors[`color${i + 1}`] = toValidHex(defaults.colors[i]);
         if ('stroke' in defaults)
             colors.stroke = defaults.stroke ? toValidHex(defaults.stroke) : null;
+        if ('text' in defaults)
+            colors.text = toValidHex(defaults.text, colors.text);
 
         this.colors = { stroke: null, ...colors };
 
@@ -93,6 +101,11 @@ class SVGChart<Data = any> {
         this.border = defaults.border;
         this.title = defaults.title;
         this.showGrid = defaults.showGrid;
+
+        // set labels
+        this.labels = defaults.showLabels
+            ? [defaults.labels[0], defaults.labels[1] || ""]
+            : ["", ""];
 
         // init SVG canvas
         this.canvas = SVG();
@@ -107,6 +120,11 @@ class SVGChart<Data = any> {
         this.canvas = c;
         this.background = bg;
         this.backgroundGroup = bgGroup;
+    }
+
+    protected getColor(i: number) {
+        const colors = Object.keys(this.colors).filter(k => k.startsWith('color')).length;
+        return this.colors[`color${(i + colors - 1) % colors + 1}` as AvailableColorKeys];
     }
 
     protected setBackground() {

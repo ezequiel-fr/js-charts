@@ -1,7 +1,6 @@
 import { Circle, G, Polyline, Rect, Text } from '@svgdotjs/svg.js';
 
 import SVGCharts, { RestOrArray, SVGChartParams } from '../utils/charts';
-import { AvailableColorKeys } from '../utils/colors';
 import { deviation, roundTo } from '../utils/math';
 
 export type Coords = { x: number, y: number };
@@ -11,6 +10,9 @@ export type SVGMultiseriesParams = SVGChartParams & {
     styleMode?: "line" | "points" | "both" | "bars";
     fillMode?: "none" | "solid" | "gradient" | "opacity" | "opacity-gradient";
     lineStyle?: "solid" | "dotted" | "dashed-1" | "dashed-2" | "dashed-3";
+    showCoords?: boolean;
+    showValues?: boolean;
+    showExtremes?: boolean;
 };
 
 interface Padding {
@@ -22,9 +24,16 @@ interface Padding {
 
 export class SVGMultiseries extends SVGCharts<Coords> {
     protected axisSoft: { min?: number | "auto", max?: number | "auto" };
+
     protected styleMode: Exclude<SVGMultiseriesParams['styleMode'], undefined>;
     protected fillMode: Exclude<SVGMultiseriesParams['fillMode'], undefined>;
     protected lineStyle: Exclude<SVGMultiseriesParams['lineStyle'], undefined>;
+
+    protected showCoords: boolean;
+    protected showValues: boolean;
+    protected showExtremes: boolean;
+
+    private points: Coords[] = [];
 
     constructor(params: SVGMultiseriesParams = {}, data: RestOrArray<Coords> = []) {
         super({
@@ -47,6 +56,9 @@ export class SVGMultiseries extends SVGCharts<Coords> {
         this.styleMode = params.styleMode || "both";
         this.fillMode = params.fillMode || "none";
         this.lineStyle = params.lineStyle || "solid";
+        this.showCoords = params.showCoords || false;
+        this.showValues = params.showValues || false;
+        this.showExtremes = params.showExtremes || false;
 
         // set data if provided
         data.length && this.setData('serie1', ...data);
@@ -70,7 +82,7 @@ export class SVGMultiseries extends SVGCharts<Coords> {
         // remove overflowing content using a clip-path
         const clip = this.canvas.clip().id(`clip-graph-${name}`);
         clip.add(new Rect().size(size.width, size.height).move(pad.left, pad.top));
-        // graph.clipWith(clip);
+        graph.clipWith(clip);
 
         // create new coords
         const coords = data.map(p => ({
@@ -93,7 +105,7 @@ export class SVGMultiseries extends SVGCharts<Coords> {
             container.add(graph.add(line));
         }
 
-        // create points (test)
+        // create points
         if (this.styleMode === "points" || this.styleMode === "both") {
             const dotSize = 6;
 
@@ -106,6 +118,40 @@ export class SVGMultiseries extends SVGCharts<Coords> {
                 .fill(color),
             ));
         }
+
+        // show coords
+        this.showCoords && coords.forEach((p, i) => {
+            // filter points to display to avoid double display (compare with this.points)
+            if (this.points.some(({ x, y }) => x === data[i].x && y === data[i].y)) return;
+            this.points.push({ x: data[i].x, y: data[i].y });
+
+            // generate text
+            const text = new Text()
+                .text(`(${data[i].x}, ${data[i].y})`)
+                .font({ size: 10, anchor: 'start', family: 'sans-serif' })
+                .fill(this.colors.text);
+            graph.add(text);
+
+            const boxSize = text.bbox();
+
+            /* get relative position from the curve before fixing (to get the right direction)
+                * for this, should compare with the curve or other points */
+
+            // get the position where the text should be
+            let xFix = 0, yFix = 0;
+
+            if (p.x + boxSize.width + 5 > size.width + pad.left) {
+                xFix = size.width + pad.left - p.x - boxSize.width - 5;
+            } else if (p.x - boxSize.width - 5 < pad.left) {
+                xFix = pad.left - p.x + boxSize.width + 5;
+            } else if (p.y - boxSize.height - 5 < pad.top) {
+                yFix = pad.top - p.y + boxSize.height + 5;
+            } else if (p.y + boxSize.height + 5 > size.height + pad.top) {
+                yFix = size.height + pad.top - p.y - boxSize.height - 5;
+            }
+
+            text.move(p.x + xFix, p.y + yFix);
+        });
 
         // create bars
         if (this.styleMode === "bars") {
@@ -162,18 +208,20 @@ export class SVGMultiseries extends SVGCharts<Coords> {
             ));
         }
 
-        return this;
+        return data;
     }
 
     process() {
-        let i = 1;
-
         // create container
         const container = new G().addClass("multiseries");
         this.canvas.add(container);
 
-        const pad = { top: 20, right: 20, bottom: 30, left: 40 };
-        const colors = Object.keys(this.colors).filter(c => c.startsWith('color')).length;
+        const pad = {
+            top: this.title ? 40 : 20,
+            right: Number(this.showValues) * 10 + 20,
+            bottom: this.labels[0].length ? 30 : 20,
+            left: this.labels[1].length ? 40 : 20,
+        };
 
         // get each minimum and maximum
         const mixedData = Array.from(this.data.values()).flat();
@@ -196,37 +244,128 @@ export class SVGMultiseries extends SVGCharts<Coords> {
             height: this.height - pad.top - pad.bottom,
         };
 
-        const xScale = size.width / deviation(mixedData.map(p => p.x))
+        const xDiff = deviation(mixedData.map(p => p.x));
+        const xScale = size.width / xDiff;
         const yScale = size.height / (maxY - minY + softMin + softMax);
 
+        // calculate the coordinates of the lowest point
+        const gridY = (maxY + softMin / 2 + softMax / 2 - minY) * yScale - size.height;
+
+        // create text values group
+        const textValues = new G().addClass('text-values');
+        this.canvas.add(textValues);
+
+        const yLabels = new Set<number>();
+        const yEndLabels = new Set<number>();
+
+        this.showExtremes && yLabels.add(minY).add(maxY);
+
         // create series
-        for (const serie of this.data.entries()) this.createSerie(
-            serie,
-            { minX, maxY: maxY + softMin / 2 + softMax / 2 },
-            { xScale, yScale },
-            size,
-            this.colors[`color${(i+++(colors-1))%colors+1}` as AvailableColorKeys],
-            container,
-            pad,
-        );
+        let i = 1;
+
+        for (const serie of this.data.entries()) {
+            const color = this.getColor(i++);
+
+            const data = this.createSerie(
+                serie, { minX, maxY: maxY + softMin / 2 + softMax / 2 },
+                { xScale, yScale }, size, color, container, pad,
+            );
+
+            // add extreme values if required (min and max on Y axis)
+            if (this.showValues) {
+                const addText = (val: Coords, right = false) => {
+                    const text = new Text()
+                        .text(val.y.toString())
+                        .fill(color)
+                        .font({ size: 12, anchor: 'middle', family: 'sans-serif' });
+                    textValues.add(text);
+
+                    text.move(
+                        right ? pad.left + size.width + 8 : pad.left - text.bbox().width - 8,
+                        roundTo((maxY - val.y) * yScale, 2) + pad.top + 12,
+                    );
+                };
+
+                if (!yLabels.has(data[0].y)) addText(data[0]), yLabels.add(data[0].y);
+
+                if (!yEndLabels.has(data[data.length - 1].y)) {
+                    addText(data[data.length - 1], true);
+                    yEndLabels.add(data[data.length - 1].y);
+                }
+            }
+        }
 
         // set grid and axis
         const width = Math.max(roundTo(xScale * (this.styleMode === 'bars' ? 1.6 : 1)), 10);
         const height = Math.max(roundTo(yScale * (this.styleMode === 'bars' ? 1.6 : 1)), 10);
 
-        // calculate the coordinates of the lowest point
         this.setGrid({
             startX: pad.left,
             startY: pad.top,
             endX: size.width + pad.left,
             endY: size.height + pad.top,
-            justifyY: (maxY + softMin / 2 + softMax / 2 - minY) * yScale - size.height,
+            justifyY: gridY,
             width,
             height,
         });
 
+        // add the title if needed
+        this.title && textValues
+            .text(this.title)
+            .move(this.width / 2, 10)
+            .fill(this.colors.text)
+            .font({ size: 20, anchor: 'middle', family: 'sans-serif' });
+
         // create labels
-        // code...
+        this.labels[0].length && textValues.add(new Text()
+            .text(this.labels[0])
+            .move(this.width / 2, this.height - pad.bottom)
+            .fill(this.colors.text)
+            .font({ size: 14, anchor: 'middle', family: 'sans-serif' })
+        );
+        this.labels[1].length && textValues.add(new Text()
+            .text(this.labels[1])
+            .move(8, this.height / 2)
+            .fill(this.colors.text)
+            .font({ size: 14, anchor: 'middle', family: 'sans-serif' })
+            .rotate(-90, Number(!this.showValues) * 8, this.height / 2)
+        );
+
+        // add max and min values
+        if (this.showExtremes) {
+            const textMaxY = new Text().text(maxY.toString());
+            const textMinY = new Text().text(minY.toString());
+            const textMaxX = new Text().text((minX + xDiff).toString());
+            const textMinX = new Text().text(minX.toString());
+
+            [textMaxY, textMinY, textMaxX, textMinX].forEach(t => textValues.add(t
+                .fill(this.colors.text)
+                .font({ size: 12, anchor: 'middle', family: 'sans-serif' })
+            ));
+
+            // adjust the positions of each text from the axis (and ajust like grid justify)
+            const boxMaxY = textMaxY.bbox();
+            const boxMinY = textMinY.bbox();
+            const boxMaxX = textMaxX.bbox();
+            const boxMinX = textMinX.bbox();
+
+            textMaxY.move(
+                pad.left - boxMaxY.width - 8,
+                gridY + yScale + pad.top - boxMaxY.height / 2,
+            );
+            textMinY.move(
+                pad.left - boxMaxY.width - 8,
+                gridY + size.height + pad.top - boxMinY.height / 2,
+            );
+            textMaxX.move(
+                size.width + pad.left - boxMaxX.width / 2,
+                size.height + pad.top + boxMaxX.height / 2 - 4,
+            );
+            textMinX.move(
+                pad.left - boxMinX.width / 2,
+                size.height + pad.top + boxMinX.height / 2 - 4,
+            );
+        }
 
         // resize group
         // code...

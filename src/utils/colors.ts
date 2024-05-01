@@ -10,6 +10,7 @@ export const Themes = {
         color7: '#fc0',
         color8: '#75758b',
         color9: '#00bfb4',
+        text: '#333',
         stroke: null,
     },
     dark: {
@@ -23,6 +24,7 @@ export const Themes = {
         color7: '#fc0',
         color8: '#75758b',
         color9: '#00bfb4',
+        text: '#f7f7f7',
         stroke: null,
     },
     white: {
@@ -31,6 +33,7 @@ export const Themes = {
         color2: '#666',
         color3: '#999',
         color4: '#ccc',
+        text: '#333',
         stroke: null,
     },
     black: {
@@ -39,6 +42,7 @@ export const Themes = {
         color2: '#ccc',
         color3: '#999',
         color4: '#666',
+        text: '#f7f7f7',
         stroke: null,
     },
     solarized: {
@@ -47,6 +51,7 @@ export const Themes = {
         color2: '#839496',
         color3: '#586e75',
         color4: '#073642',
+        text: '#002b36',
         stroke: null,
     },
     monokai: {
@@ -59,6 +64,7 @@ export const Themes = {
         color6: '#a6e22e',
         color7: '#f8f8f2',
         color8: '#75715e',
+        text: '#f8f8f2',
         stroke: null,
     },
     nord: {
@@ -70,6 +76,7 @@ export const Themes = {
         color5: '#d08770',
         color6: '#ebcb8b',
         color7: '#a3be8c',
+        text: '#d8dee9',
         stroke: null,
     },
     gruvbox: {
@@ -78,6 +85,7 @@ export const Themes = {
         color2: '#a89984',
         color3: '#665c54',
         color4: '#464341',
+        text: '#fbf1c7',
         stroke: null,
     },
     onedark: {
@@ -88,6 +96,7 @@ export const Themes = {
         color4: '#e06c75',
         color5: '#61afef',
         color6: '#c678dd',
+        text: '#abb2bf',
         stroke: null,
     },
     github: {
@@ -101,6 +110,7 @@ export const Themes = {
         color7: '#6f42c1',
         color8: '#e83e8c',
         color9: '#b08800',
+        text: '#24292e',
         stroke: null,
     },
     dracula: {
@@ -109,6 +119,7 @@ export const Themes = {
         color2: '#6272a4',
         color3: '#44475a',
         color4: '#383a59',
+        text: '#f8f8f2',
         stroke: null,
     },
     ayu: {
@@ -117,6 +128,12 @@ export const Themes = {
         color2: '#818c99',
         color3: '#5c6773',
         color4: '#3b4252',
+        color5: '#e06c75',
+        color6: '#98c379',
+        color7: '#d19a66',
+        color8: '#61afef',
+        color9: '#c678dd',
+        text: '#abb2bf',
         stroke: null,
     },
     synthwave: {
@@ -125,6 +142,7 @@ export const Themes = {
         color2: '#f8d847',
         color3: '#45f0df',
         color4: '#c7f0db',
+        text: '#f8d847',
         stroke: null,
     },
     outrun: {
@@ -132,6 +150,7 @@ export const Themes = {
         color1: '#ffcc00',
         color2: '#ff00cc',
         color3: '#ff0066',
+        text: '#ff0066',
         stroke: null,
     },
     ocean: {
@@ -139,6 +158,8 @@ export const Themes = {
         color1: '#c0c5ce',
         color2: '#a6accd',
         color3: '#828997',
+        color4: '#5c6370',
+        text: '#c0c5ce',
         stroke: null,
     },
     chocolate: {
@@ -147,6 +168,7 @@ export const Themes = {
         color2: '#504339',
         color3: '#b8afad',
         color4: '#665c54',
+        text: '#d3af86',
         stroke: null,
     },
     violet: {
@@ -155,6 +177,7 @@ export const Themes = {
         color2: '#9a86fd',
         color3: '#9ccfd8',
         color4: '#b877db',
+        text: '#a9b1d6',
         stroke: null,
     },
     atom: {
@@ -163,6 +186,7 @@ export const Themes = {
         color2: '#e06c75',
         color3: '#98c379',
         color4: '#c678dd',
+        text: '#abb2bf',
         stroke: null,
     },
     tomorrow: {
@@ -171,6 +195,11 @@ export const Themes = {
         color2: '#8e908c',
         color3: '#c82829',
         color4: '#f5871f',
+        color5: '#4271ae',
+        color6: '#718c00',
+        color7: '#8959a8',
+        color8: '#a3685a',
+        text: '#4d4d4c',
         stroke: null,
     },
     twilight: {
@@ -179,6 +208,7 @@ export const Themes = {
         color2: '#c3c3c3',
         color3: '#969896',
         color4: '#818181',
+        text: '#f7f7f7',
         stroke: null,
     },
     blood: {
@@ -187,6 +217,7 @@ export const Themes = {
         color2: '#ffcc00',
         color3: '#ff0066',
         color4: '#ffcc00',
+        text: '#ff0066',
         stroke: null,
     },
     moon: {
@@ -195,10 +226,7 @@ export const Themes = {
         color2: '#939293',
         color3: '#676a6d',
         color4: '#515253',
-        stroke: null,
-    },
-    none: {
-        background: '#000',
+        text: '#c9c9c9',
         stroke: null,
     },
     darkParty: {
@@ -211,7 +239,12 @@ export const Themes = {
         color6: '#8be9fd',
         color7: '#ffb86c',
         color8: '#6272a4',
-        color9: '#ff5555',
+        text: '#f8f8f2',
+        stroke: null,
+    },
+    none: {
+        background: '#000',
+        text: '#fff',
         stroke: null,
     },
 } as const;
@@ -258,18 +291,15 @@ export function getStroke(background: string, mode: 'opposite' | 'contrast' = 'o
 
     let stroke: number[];
 
+    // calculate the brightness ratio as a number between 0 and 255
+    const brightness = rgb[0] * .299 + rgb[1] * .587 + rgb[2] * .114;
+
     if (mode === 'opposite') {
-        // calculate the contrast ratio as a number between 0 and 255
-        const contrast = rgb[0] * .299 + rgb[1] * .587 + rgb[2] * .114;
         // get the stroke color by calculating the opposite color
         const opposite = rgb.map(c => 255 - c);
-
         // adjust the stroke color based on the contrast ratio
-        stroke = opposite.map(c => Math.round(c * (1 + contrast / 255)) % 256);
+        stroke = opposite.map(c => Math.round(c * (1 + brightness / 255)) % 256);
     } else {
-        // calculate the brightness as a number between 0 and 255
-        const brightness = rgb[0] * .299 + rgb[1] * .587 + rgb[2] * .114;
-
         // if the brightness is less than 128, return a color that is 20% brighter
         // otherwise, return a color that is 20% darker
         const weight = (brightness < 128 ? 1 : -1) * 58;
