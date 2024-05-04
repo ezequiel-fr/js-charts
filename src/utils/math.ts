@@ -10,3 +10,6 @@ export const averageWeighted = (data: number[], weights: number[]) => {
     const sumWeights = sum(weights);
     return sum(data.map((x, i) => x * weights[i])) / sumWeights;
 };
+
+export const radToDeg = (rad: number) => (rad * 180) / Math.PI;
+export const degToRad = (deg: number) => (deg * Math.PI) / 180;

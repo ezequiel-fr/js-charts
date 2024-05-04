@@ -79,7 +79,12 @@ class SVGChart<Data = any> {
         if ('theme' in defaults && defaults.theme) { // @ts-ignore
             colors = Themes[defaults.theme in Themes ? defaults.theme : 'light'];
         } else {
-            colors = 'background' in defaults && 'colors' in defaults ? Themes.none : Themes.light;
+            colors = 'background' in defaults
+                && 'colors' in defaults
+                && defaults.background !== 'null'
+                && defaults.text !== 'null'
+                ? Themes.none
+                : Themes.light;
         }
 
         // if custom colors are provided, use them
@@ -122,9 +127,11 @@ class SVGChart<Data = any> {
         this.backgroundGroup = bgGroup;
     }
 
-    protected getColor(i: number) {
+    protected getColor(i?: number) {
         const colors = Object.keys(this.colors).filter(k => k.startsWith('color')).length;
-        return this.colors[`color${(i + colors - 1) % colors + 1}` as AvailableColorKeys];
+        const choice = i || Math.floor(Math.random() * colors);
+
+        return this.colors[`color${(choice + colors - 1) % colors + 1}` as AvailableColorKeys];
     }
 
     protected setBackground() {
