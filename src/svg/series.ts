@@ -22,7 +22,7 @@ interface Padding {
     left: number;
 }
 
-export class SVGMultiseries extends SVGCharts<Coords> {
+export class SVGMultiseries extends SVGCharts<Coords[]> {
     protected axisSoft: { min?: number | "auto", max?: number | "auto" };
 
     protected styleMode: Exclude<SVGMultiseriesParams['styleMode'], undefined>;
@@ -35,7 +35,7 @@ export class SVGMultiseries extends SVGCharts<Coords> {
 
     private points: Coords[] = [];
 
-    constructor(params: SVGMultiseriesParams = {}, data: RestOrArray<Coords> = []) {
+    constructor(params: SVGMultiseriesParams = {}, ...data: RestOrArray<Coords[]>) {
         super({
             dimensions: { width: 800, height: 450 },
             ...params,

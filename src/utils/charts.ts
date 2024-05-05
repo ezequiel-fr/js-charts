@@ -3,7 +3,7 @@ import { G, Rect, SVG, StrokeData, Svg } from '@svgdotjs/svg.js';
 import { AvailableColorKeys, AvailableThemes, getStroke, Themes, toValidHex } from './colors';
 import { roundTo } from './math';
 
-export type RestOrArray<T> = T[] | [T[]];
+export type RestOrArray<T> = T[] | T[][];
 export type Dimensions = { width: number, height: number };
 
 export interface Grid extends Dimensions {
@@ -50,7 +50,7 @@ class SVGChart<Data = any> {
     protected showGrid: boolean;
 
     // data
-    protected data: Map<string, Data[]> = new Map();
+    protected data: Map<string, Data> = new Map();
 
     // SVG elements
     protected canvas: Svg;
@@ -176,7 +176,11 @@ class SVGChart<Data = any> {
     }
 
     setData(serie: string, ...data: RestOrArray<Data>) {
-        this.data.set(serie, data as Data[]);
+        data.length && this.data.set(
+            serie,
+            (Array.isArray(data[0]) ? data.flat() : data) as Data,
+        );
+
         return this;
     }
 

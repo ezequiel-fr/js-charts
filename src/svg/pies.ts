@@ -17,6 +17,13 @@ export type SVGGaugeParams = SVGChartParams & {
     showUnit?: boolean;
 };
 
+export type SVGPieChartParams = SVGChartParams & {
+    data: { value: number, label?: string }[];
+    showLabels?: boolean;
+    showValues?: boolean;
+    showLegend?: boolean;
+};
+
 const arc = (
     startAngle: number,
     endAngle: number,
@@ -236,6 +243,115 @@ export class SVGGauge extends SVGCharts<undefined> {
         // resize canvas
         const finalHeight = Math.max(gaugeGroup.bbox().y2, labels.bbox().y2) * 16/15;
         this.canvas.size(this.width, finalHeight);
+
+        return this;
+    }
+}
+
+export class SVGPieChart extends SVGCharts<undefined> {
+    protected _data: SVGPieChartParams['data'] = [];
+
+    protected showLabels: boolean;
+    protected showValues: boolean;
+
+    constructor(params: SVGPieChartParams) {
+        super({
+            dimensions: { width: 400, height: 400 },
+            ...params
+        });
+
+        // set params
+        this._data = params.data;
+
+        this.showLabels = params.showLabels ?? true;
+        this.showValues = params.showValues ?? true;
+    }
+
+    process() {
+        // create pie chart
+        const pieGroup = this.canvas.group().addClass('pie-chart');
+        const labels = this.canvas.group().addClass('chart-legend');
+
+        // sort data
+        this._data = this._data.sort((a, b) => b.value - a.value);
+
+        // sort data handling values with same label
+        const combinedData: Record<string, { value: number, label: string }> = {};
+
+        this._data.forEach(e => {
+            const label = e.label || "Unkown";
+
+            if (!combinedData[label]) {
+                combinedData[label] = { value: e.value, label };
+                if (label !== "Unkown") combinedData[label] = { ...combinedData[label], label };
+            } else {
+                combinedData[label].value += e.value;
+            }
+        });
+
+        this._data = Object.values(combinedData);
+
+        // handle last slice if not 100%
+        const total = this._data.map(e => e.value).reduce((a, b) => a + b);
+
+        if (total < 100) this._data.push({
+            label: "Undefined",
+            value: 100 - total,
+        });
+        else if (total > 100) this._data = this._data.map(e => ({
+            ...e, value: e.value / total * 100,
+        }));
+
+        // draw pie chart
+        const radius = this.width / 3;
+        const cx = this.width / 2;
+        const cy = this.height / 2;
+
+        let count = 0;
+        this._data.forEach((e, k) => {
+            const params: [number, number] = [count * 3.6, (count += e.value) * 3.6];
+            const color = this.getColor(k);
+
+            const arcValues = arc(...params, radius, cx, cy);
+            const path = `M${cx},${cy} L${arcValues.startX},${arcValues.startY} ` +
+                         `A${arcValues.r},${arcValues.r} 0 ` +
+                         `${params[1] - params[0] > 180 ? 1 : 0},1 ` +
+                         `${arcValues.endX},${arcValues.endY}Z`;
+
+            const slice = this.canvas.path(path).fill(color);
+
+            pieGroup.add(slice);
+
+            // add labels
+            if (this.showLabels) {
+                const label = labels.text(e.label || 'Unkown')
+                    .fill(this.colors.text)
+                    .font({ size: this.width / 20, anchor: 'middle', family: 'sans-serif' });
+
+                const box = label.bbox();
+                const angle = (params[0] + params[1]) / 2 - 90;
+
+                label.move(
+                    cx + (radius + 10) * Math.cos(degToRad(angle)) - box.width / 2,
+                    cy + (radius + 10) * Math.sin(degToRad(angle)) - box.height / 2,
+                );
+            }
+
+            // add values
+            if (this.showValues) {
+                const value = labels.text(`${e.value}%`)
+                    .fill(this.colors.text)
+                    .font({ size: this.width / 20, anchor: 'middle', family: 'sans-serif' });
+
+                const box = value.bbox();
+                const angle = (params[0] + params[1]) / 2 - 90;
+
+                value.move(
+                    cx + (radius - 10) * Math.cos(degToRad(angle)) - box.width / 2,
+                    cy + (radius - 10) * Math.sin(degToRad(angle)) - box.height / 2,
+                );
+            }
+        });
 
         return this;
     }

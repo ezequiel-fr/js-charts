@@ -1,7 +1,7 @@
 import { createSVGWindow } from 'svgdom';
 import { registerWindow } from '@svgdotjs/svg.js';
 
-import { SVGGauge, SVGGaugeParams } from './svg/pies';
+import { SVGGauge, SVGGaugeParams, SVGPieChart, SVGPieChartParams } from './svg/pies';
 import { Coords, SVGMultiseries, SVGMultiseriesParams } from './svg/series';
 import { RestOrArray } from './utils/charts';
 
@@ -15,7 +15,7 @@ if (typeof window === 'undefined') {
     registerWindow(window, document);
 }
 
-export const multiseriesFromData = (data: RestOrArray<Coords>, type: ChartType = 'svg') => (
+export const multiseriesFromData = (data: RestOrArray<Coords[]>, type: ChartType = 'svg') => (
     type === 'svg'
         ? new SVGMultiseries().setData('serie1', ...data).process().toString()
         : ''
@@ -25,10 +25,12 @@ export const multiseriesFromData = (data: RestOrArray<Coords>, type: ChartType =
 export {
     SVGGauge,
     SVGMultiseries,
+    SVGPieChart,
 };
 
 // named exports
 export type {
     SVGGaugeParams,
     SVGMultiseriesParams,
+    SVGPieChartParams,
 };
