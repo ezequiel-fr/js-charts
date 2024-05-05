@@ -14,7 +14,6 @@ export type SVGGaugeParams = SVGChartParams & {
     randomFill?: boolean;
     showValue?: boolean;
     showMinMax?: boolean;
-    showStep?: boolean;
     showUnit?: boolean;
 };
 
@@ -47,7 +46,6 @@ export class SVGGauge extends SVGCharts<undefined> {
     protected randomFill: boolean;
     protected showValue: boolean;
     protected showMinMax: boolean;
-    protected showStep: boolean;
     protected showUnit: boolean;
 
     constructor(params: SVGGaugeParams) {
@@ -68,7 +66,6 @@ export class SVGGauge extends SVGCharts<undefined> {
         this.randomFill = params.randomFill ?? false;
         this.showValue = params.showValue ?? true;
         this.showMinMax = params.showMinMax ?? false;
-        this.showStep = params.showStep ?? false;
         this.showUnit = params.showUnit ?? true;
     }
 
@@ -98,6 +95,9 @@ export class SVGGauge extends SVGCharts<undefined> {
             : [1, .9, .72, 0].findIndex(l => scale >= l) || 0
         );
         const strokeColor = this.colors.stroke || getStroke(this.colors.background, 'contrast');
+
+        // unit text
+        const unit = this.showUnit ? this.unit : '';
 
         if (this.style === 'half' || this.style === 'half-rounded') {
             const rounded = this.style === 'half-rounded';
@@ -142,11 +142,11 @@ export class SVGGauge extends SVGCharts<undefined> {
 
             // min/max values
             if (this.showMinMax) {
-                const min = labels.text(`${this.min}${this.showUnit ? this.unit : ''}`)
+                const min = labels.text(`${this.min}${unit}`)
                     .fill(this.colors.text)
                     .font({ size: this.width / 20, anchor: 'middle', family: 'sans-serif' });
 
-                const max = labels.text(`${this.max}${this.showUnit ? this.unit : ''}`)
+                const max = labels.text(`${this.max}${unit}`)
                     .fill(this.colors.text)
                     .font({ size: this.width / 20, anchor: 'middle', family: 'sans-serif' });
 
@@ -190,24 +190,50 @@ export class SVGGauge extends SVGCharts<undefined> {
             gaugeGroup.add(outerCircle);
             gaugeGroup.path(path).fill(color);
             gaugeGroup.add(innerCircle);
+
+            // min/max labels above the value
+            if (this.showMinMax) {
+                const min = labels.text(`Min: ${this.min}${unit}`)
+                    .fill({ color: this.colors.text, opacity: .667 })
+                    .font({ size: this.width / 20, anchor: 'middle', family: 'sans-serif' });
+
+                const max = labels.text(`Max: ${this.max}${unit}`)
+                    .fill({ color: this.colors.text, opacity: .667 })
+                    .font({ size: this.width / 20, anchor: 'middle', family: 'sans-serif' });
+
+                const minBox = min.bbox();
+                const maxBox = max.bbox();
+
+                const height = Math.max(minBox.height, maxBox.height);
+
+                min.move(
+                    halfWidth - minBox.width / 2,
+                    halfWidth- Number(!this.showValue) * height,
+                );
+                max.move(
+                    halfWidth - maxBox.width / 2,
+                    halfWidth + Number(this.showValue) * height,
+                );
+            }
         }
 
         // add text
         if (this.showValue) {
             const label = labels
-                .text(`${value}${this.showUnit ? this.unit : ''}`)
+                .text(`${value}${unit}`)
                 .fill(this.colors.text)
                 .font({ size: this.width / 10, anchor: 'middle', family: 'sans-serif' });
 
             const labelBox = label.bbox();
+            const gap = labelBox.height * (this.showMinMax && this.style === 'full' ? 1 : .5);
+
             label.move(
                 halfWidth - labelBox.width * .45,
-                halfWidth - labelBox.height / 2,
+                halfWidth - gap,
             );
         }
 
         // resize canvas
-        // console.log(gaugeGroup.bbox(), labels.bbox());
         const finalHeight = Math.max(gaugeGroup.bbox().y2, labels.bbox().y2) * 16/15;
         this.canvas.size(this.width, finalHeight);
 
